@@ -25,6 +25,7 @@ public class ObjectReader {
     private Packet reader = null;
     private List<String> references;
 
+
     public ObjectReader(byte[] bytes){
         reader = new Packet(bytes);
         reader.skip(4);// magic number
@@ -32,6 +33,7 @@ public class ObjectReader {
     }
 
     public void readObject(){
+        // TODO readString readLongString readNestedObject
         byte type = reader.peek();
         switch (type){
             case TC_OBJECT: {
