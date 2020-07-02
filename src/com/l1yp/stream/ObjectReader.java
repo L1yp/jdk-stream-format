@@ -69,6 +69,7 @@ public class ObjectReader {
 
         reader.skip(1);
 
+        //TODO read field value
 
     }
 
@@ -112,6 +113,7 @@ public class ObjectReader {
                 if (tag == TC_REFERENCE){
                     int index = reader.readInt() - 8257536;
                     descriptor.fields[i].typeName = references.get(index);
+                    // TODO need field Type
                 }else {
                     descriptor.fields[i].typeName = reader.readUTF();
                     references.add(descriptor.fields[i].typeName);
