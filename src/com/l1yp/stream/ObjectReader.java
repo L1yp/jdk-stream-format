@@ -32,13 +32,11 @@ public class ObjectReader {
     }
 
     public void readObject(){
-        while (reader.remaining() > 0){
-            byte type = reader.peek();
-            switch (type){
-                case TC_OBJECT: {
-                    readOrdinaryObject();
-                    break;
-                }
+        byte type = reader.peek();
+        switch (type){
+            case TC_OBJECT: {
+                readOrdinaryObject();
+                break;
             }
         }
     }
@@ -49,6 +47,7 @@ public class ObjectReader {
         }
 
 
+        List<ObjectDescriptor> nestedObj = new ArrayList<>();
         byte superTag;
         do {
             byte type = reader.peek();
@@ -56,6 +55,7 @@ public class ObjectReader {
             switch (type){
                 case TC_CLASSDESC: {
                     descriptor = readClassDesc();
+                    nestedObj.add(descriptor);
                     System.out.println("descriptor = " + descriptor);
                     break;
                 }
@@ -69,12 +69,46 @@ public class ObjectReader {
 
         reader.skip(1);
 
-        //TODO read field value
+        int primSize = 0;
 
+        for (int i = nestedObj.size() - 1; i >= 0; i--) {
+            ObjectDescriptor descriptor = nestedObj.get(i);
+            for (FieldDescriptor field : descriptor.fields) {
+                if (field.type != null && field.type != Object.class){
+                    switch (field.typeCode) {
+                        case 'Z', 'B' -> System.out.println(field.name + " = " + reader.read());
+                        case 'C', 'S' -> System.out.println(field.name + " = " + reader.readShort());
+                        case 'I', 'F' -> System.out.println(field.name + " = " + reader.readInt());
+                        case 'J', 'D' -> System.out.println(field.name + " = " + reader.readLong());
+                        default -> throw new IllegalArgumentException("illegal signature");
+                    }
+                }else {
+                    System.out.println(field.name + " = " + dynamicRead(field));
+                    break;
+                }
+
+            }
+        }
+
+    }
+
+    private Object dynamicRead(FieldDescriptor field){
+        if (field.typeName.equals("Ljava/lang/String;")){
+            byte tag = reader.read();
+            if (tag == TC_STRING){
+                return reader.readUTF();
+            }else if (tag == TC_NULL){
+                return null;
+            }else {
+                throw new UnsupportedOperationException("tag = " + tag);
+            }
+        }
+        return null;
     }
 
     private ObjectDescriptor readClassDesc(){
         byte tc = reader.peek();
+
         ObjectDescriptor descriptor;
         switch (tc) {
             case TC_CLASSDESC:
@@ -95,6 +129,7 @@ public class ObjectReader {
         ObjectDescriptor descriptor = new ObjectDescriptor();
         descriptor.name = reader.readUTF();
         references.add(descriptor.name);
+
         descriptor.serialId = reader.readLong();
         descriptor.flags = reader.read();
 
