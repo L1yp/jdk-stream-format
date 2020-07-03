@@ -55,7 +55,8 @@ public class ObjectReader {
         switch (type) {
             case TC_OBJECT:
                 return readOrdinaryObject();
-            case TC_STRING, TC_LONGSTRING:
+            case TC_STRING:
+                case TC_LONGSTRING:
                 return readString(false);
             case TC_NULL: {
                 reader.skip(1);
@@ -149,11 +150,15 @@ public class ObjectReader {
                 key = field.name;
                 if (field.type != null && field.type != Object.class) {
                     switch (field.typeCode) {
-                        case 'Z', 'B' -> val = reader.read();
-                        case 'C', 'S' -> val = reader.readShort();
-                        case 'I', 'F' -> val = reader.readInt();
-                        case 'J', 'D' -> val = reader.readLong();
-                        default -> throw new IllegalArgumentException("illegal signature");
+                        case 'Z':
+                        case 'B':  val = reader.read(); break;
+                        case 'C':
+                        case 'S': val = reader.readShort(); break;
+                        case 'I':
+                        case 'F': val = reader.readInt(); break;
+                        case 'J':
+                        case 'D': val = reader.readLong(); break;
+                        default : throw new IllegalArgumentException("illegal signature");
                     }
                 } else {
                     val = readObject();
