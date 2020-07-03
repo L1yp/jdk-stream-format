@@ -1,114 +1,176 @@
 package com.l1yp.stream;
 
+import com.l1yp.adapter.Adapter;
+import com.l1yp.adapter.AdapterRegistry;
 import com.l1yp.stream.ObjectDescriptor.FieldDescriptor;
 import com.l1yp.util.Packet;
 
-import java.io.IOException;
-import java.io.InvalidClassException;
-import java.io.ObjectStreamClass;
-import java.io.ObjectStreamConstants;
-import java.io.ObjectStreamField;
-import java.io.StreamCorruptedException;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
-import static java.io.ObjectStreamConstants.*;
+import static java.io.ObjectStreamConstants.TC_CLASSDESC;
+import static java.io.ObjectStreamConstants.TC_LONGSTRING;
+import static java.io.ObjectStreamConstants.TC_NULL;
+import static java.io.ObjectStreamConstants.TC_OBJECT;
+import static java.io.ObjectStreamConstants.TC_REFERENCE;
+import static java.io.ObjectStreamConstants.TC_STRING;
 
 /**
  * @Author Lyp
- * @Date   2020-07-02
- * @Email  l1yp@qq.com
+ * @Date 2020-07-02
+ * @Email l1yp@qq.com
  */
 public class ObjectReader {
 
     private Packet reader = null;
-    private List<String> references;
+
+    public Packet getReader() {
+        return reader;
+    }
+
+    /**
+     * readClass // TODO
+     * readProxyDesc // TODO
+     * readArray //TODO
+     * readEnum // TODO
+     * readNonProxyDesc
+     * readString from readObject / readTypeString / readEnum 不包含字段名,仅缓存 字符串实例, 引用类型的签名字符串, 枚举
+     * readObject
+     */
+    private List<Object> references;
+    private static final Object unsharedMarker = new Object();
 
 
-    public ObjectReader(byte[] bytes){
+    public ObjectReader(byte[] bytes) {
         reader = new Packet(bytes);
         reader.skip(4);// magic number
         references = new ArrayList<>();
     }
 
-    public void readObject(){
+    public Object readObject() {
         // TODO readString readLongString readNestedObject
         byte type = reader.peek();
-        switch (type){
-            case TC_OBJECT: {
-                readOrdinaryObject();
-                break;
+        switch (type) {
+            case TC_OBJECT:
+                return readOrdinaryObject();
+            case TC_STRING, TC_LONGSTRING:
+                return readString(false);
+            case TC_NULL: {
+                reader.skip(1);
+                return null;
             }
+            default:
+                return null;
         }
     }
 
-    private void readOrdinaryObject(){
-        if (reader.read() != TC_OBJECT){
+    private String readString(boolean unshared) {
+        String str;
+        byte tc = reader.read();
+        switch (tc) {
+            case TC_STRING:
+                str = reader.readUTF();
+                break;
+
+            case TC_LONGSTRING:
+                str = reader.readLongUTF();
+                break;
+
+            default:
+                throw new IllegalArgumentException(String.format("invalid type code: %02X", tc));
+        }
+        references.add(unshared ? unsharedMarker : str);
+        return str;
+
+    }
+
+    private Object readOrdinaryObject() {
+        if (reader.read() != TC_OBJECT) {
             throw new InternalError();
         }
 
 
         List<ObjectDescriptor> nestedObj = new ArrayList<>();
-        byte superTag;
+        byte superTag = 0;
+        outer:
         do {
             byte type = reader.peek();
             ObjectDescriptor descriptor = null;
-            switch (type){
+            switch (type) {
                 case TC_CLASSDESC: {
                     descriptor = readClassDesc();
                     nestedObj.add(descriptor);
                     System.out.println("descriptor = " + descriptor);
                     break;
                 }
+                case TC_REFERENCE: {
+                    reader.skip(1);
+                    int index = reader.readInt() - 8257536;
+                    descriptor = (ObjectDescriptor) references.get(index);
+                    nestedObj.add(descriptor);
+
+                    System.out.println("reference = " + descriptor);
+                    break outer;
+                }
                 default:
-                    throw new UnsupportedOperationException("不支持的描述类型");
+                    throw new UnsupportedOperationException("不支持的描述类型: " + type);
             }
 
             reader.skip(1); // end
             superTag = reader.peek();
-        }while (superTag != TC_NULL);
+        } while (superTag != TC_NULL);
 
-        reader.skip(1);
+        if (superTag == TC_NULL) {
+            reader.skip(1);
+        }
 
-        int primSize = 0;
+        List<FieldDescriptor> results = new ArrayList<>();
+
+        HashMap<String, Object> map = new LinkedHashMap<>();
+        references.add(map);
+
+        String key;
+        Object val;
+        String clazzName = nestedObj.get(0).name;
+        if (AdapterRegistry.contains(clazzName)) {
+            int size = references.size();
+            Adapter<?> adapter = AdapterRegistry.get(clazzName);
+            Object result = adapter.read(clazzName, this);
+            references.set(size - 1, result);
+            return result;
+        }
 
         for (int i = nestedObj.size() - 1; i >= 0; i--) {
             ObjectDescriptor descriptor = nestedObj.get(i);
+
             for (FieldDescriptor field : descriptor.fields) {
-                if (field.type != null && field.type != Object.class){
+                key = field.name;
+                if (field.type != null && field.type != Object.class) {
                     switch (field.typeCode) {
-                        case 'Z', 'B' -> System.out.println(field.name + " = " + reader.read());
-                        case 'C', 'S' -> System.out.println(field.name + " = " + reader.readShort());
-                        case 'I', 'F' -> System.out.println(field.name + " = " + reader.readInt());
-                        case 'J', 'D' -> System.out.println(field.name + " = " + reader.readLong());
+                        case 'Z', 'B' -> val = reader.read();
+                        case 'C', 'S' -> val = reader.readShort();
+                        case 'I', 'F' -> val = reader.readInt();
+                        case 'J', 'D' -> val = reader.readLong();
                         default -> throw new IllegalArgumentException("illegal signature");
                     }
-                }else {
-                    System.out.println(field.name + " = " + dynamicRead(field));
-                    break;
+                } else {
+                    val = readObject();
                 }
-
+                field.val = val;
+                System.out.println("name = " + key + ", val = " + val);
+                results.add(field);
+                map.put(key, val);
             }
         }
 
+
+        return results;
     }
 
-    private Object dynamicRead(FieldDescriptor field){
-        if (field.typeName.equals("Ljava/lang/String;")){
-            byte tag = reader.read();
-            if (tag == TC_STRING){
-                return reader.readUTF();
-            }else if (tag == TC_NULL){
-                return null;
-            }else {
-                throw new UnsupportedOperationException("tag = " + tag);
-            }
-        }
-        return null;
-    }
 
-    private ObjectDescriptor readClassDesc(){
+    private ObjectDescriptor readClassDesc() {
         byte tc = reader.peek();
 
         ObjectDescriptor descriptor;
@@ -124,13 +186,13 @@ public class ObjectReader {
 
     }
 
-    private ObjectDescriptor readNonProxyDesc(){
-        if (reader.read() != TC_CLASSDESC){
+    private ObjectDescriptor readNonProxyDesc() {
+        if (reader.read() != TC_CLASSDESC) {
             throw new InternalError();
         }
         ObjectDescriptor descriptor = new ObjectDescriptor();
         descriptor.name = reader.readUTF();
-        references.add(descriptor.name);
+        references.add(descriptor); // 不缓存字段名
 
         descriptor.serialId = reader.readLong();
         descriptor.flags = reader.read();
@@ -145,13 +207,13 @@ public class ObjectReader {
             descriptor.fields[i].name = reader.readUTF();
             descriptor.fields[i].typeCode = tag;
             descriptor.fields[i].type = readType(tag);
-            if (tag == 'L' || tag == '['){
+            if (tag == 'L' || tag == '[') {
                 tag = reader.read(); // tag
-                if (tag == TC_REFERENCE){
+                if (tag == TC_REFERENCE) {
                     int index = reader.readInt() - 8257536;
-                    descriptor.fields[i].typeName = references.get(index);
+                    descriptor.fields[i].typeName = (String) references.get(index);
                     // TODO need field Type
-                }else {
+                } else {
                     descriptor.fields[i].typeName = reader.readUTF();
                     references.add(descriptor.fields[i].typeName);
                 }
@@ -159,71 +221,34 @@ public class ObjectReader {
 
         }
 
-        computeFieldOffsets(descriptor.fields);
-
         return descriptor;
     }
 
-    private Class<?> readType(byte tag){
+    private Class<?> readType(byte tag) {
         switch (tag) {
-            case 'Z': return Boolean.TYPE;
-            case 'B': return Byte.TYPE;
-            case 'C': return Character.TYPE;
-            case 'S': return Short.TYPE;
-            case 'I': return Integer.TYPE;
-            case 'J': return Long.TYPE;
-            case 'F': return Float.TYPE;
-            case 'D': return Double.TYPE;
+            case 'Z':
+                return Boolean.TYPE;
+            case 'B':
+                return Byte.TYPE;
+            case 'C':
+                return Character.TYPE;
+            case 'S':
+                return Short.TYPE;
+            case 'I':
+                return Integer.TYPE;
+            case 'J':
+                return Long.TYPE;
+            case 'F':
+                return Float.TYPE;
+            case 'D':
+                return Double.TYPE;
             case 'L':
-            case '[': return Object.class;
-            default: throw new IllegalArgumentException("illegal signature");
+            case '[':
+                return Object.class;
+            default:
+                throw new IllegalArgumentException("illegal signature");
         }
     }
-
-    private void computeFieldOffsets(FieldDescriptor[] fields) {
-        int primDataSize = 0;
-        int numObjFields = 0;
-        int firstObjIndex = -1;
-
-        for (int i = 0; i < fields.length; i++) {
-            FieldDescriptor f = fields[i];
-            switch (f.typeCode) {
-                case 'Z':
-                case 'B':
-                    f.offset = primDataSize++;
-                    break;
-                case 'C':
-                case 'S':
-                    f.offset = primDataSize;
-                    primDataSize += 2;
-                    break;
-
-                case 'I':
-                case 'F':
-                    f.offset = primDataSize;
-                    primDataSize += 4;
-                    break;
-
-                case 'J':
-                case 'D':
-                    f.offset = primDataSize;
-                    primDataSize += 8;
-                    break;
-
-                case '[':
-                case 'L':
-                    f.offset = primDataSize++;
-                    if (firstObjIndex == -1) {
-                        firstObjIndex = i;
-                    }
-                    break;
-
-                default:
-                    throw new InternalError();
-            }
-        }
-    }
-
 
 
 }

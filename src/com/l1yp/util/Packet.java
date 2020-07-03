@@ -154,6 +154,15 @@ public class Packet {
         return s;
     }
 
+    public char readChar(){
+        checkReadBound(2);
+        byte b1 = buf[readerPos];
+        byte b2 = buf[readerPos + 1];
+        char s = (char) (((b1 << 8) & 65280) + ((b2) & 255));
+        readerPos += 2;
+        return s;
+    }
+
     private static final int MAX_SHORT_VALUE = 65535;
 
     public int readUShort(){
@@ -166,6 +175,18 @@ public class Packet {
     public String readUTF(){
         checkReadBound(2);
         int size = readUShort();
+        if (size == 0){
+            return "";
+        }
+        checkReadBound(size);
+        String result = new String(buf, readerPos, size);
+        readerPos += size;
+        return result;
+    }
+
+    public String readLongUTF(){
+        checkReadBound(4);
+        int size = readInt();
         if (size == 0){
             return "";
         }
@@ -212,6 +233,21 @@ public class Packet {
 
         readerPos += 8;
         return l;
+    }
+
+    public boolean readBoolean(){
+        checkReadBound(1);
+        return read() != 0;
+    }
+
+    public float readFloat(){
+        checkReadBound(4);
+        return Float.intBitsToFloat(readInt());
+    }
+
+    public double readDouble(){
+        checkReadBound(8);
+        return Double.longBitsToDouble(readLong());
     }
 
     public void readBytes(byte[] dst, int off, int size){

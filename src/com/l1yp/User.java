@@ -9,8 +9,23 @@ import java.io.Serializable;
  */
 public class User extends Account implements Serializable {
 
+    @java.io.Serial
+    private static final long serialVersionUID = 2047279823485445574L;
+
+    UserDetail detail;
     String name;
     int age;
     long id;
 
+    @Override
+    public String toString() {
+        return "User{" +
+                "detail=" + detail +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                ", id=" + id +
+                ", money=" + money +
+                ", accountName='" + accountName + '\'' +
+                '}';
+    }
 }

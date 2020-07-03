@@ -28,7 +28,7 @@ public class ObjectDescriptor {
         String typeName;
         byte typeCode;
         String name;
-        int offset;
+        Object val;
 
         @Override
         public String toString() {
@@ -37,7 +37,7 @@ public class ObjectDescriptor {
                     ", typeName='" + typeName + '\'' +
                     ", typeCode=" + typeCode +
                     ", name='" + name + '\'' +
-                    ", offset=" + offset +
+                    ", val=" + val +
                     '}';
         }
     }
