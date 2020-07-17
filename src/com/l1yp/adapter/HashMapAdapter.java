@@ -15,7 +15,8 @@ public class HashMapAdapter implements Adapter<HashMap> {
         int i = reader.getReader().readInt();
         float loadFactor = Float.intBitsToFloat(i);
         int threshold = reader.getReader().readInt();
-        reader.getReader().skip(2);
+        reader.getReader().skip(1);
+        byte len = reader.getReader().read(); // block start
         reader.getReader().skip(4); // buckets size
         int mappings = reader.getReader().readInt();
         int cap = (int)(threshold / loadFactor);
