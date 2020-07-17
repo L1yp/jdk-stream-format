@@ -1,6 +1,7 @@
 package com.l1yp;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.HashSet;
 
 /**
@@ -11,6 +12,8 @@ import java.util.HashSet;
 public class UserSet implements Serializable {
 
     Long longVal;
+    Date time;
+    String time2;
     Integer intVal;
 
 }

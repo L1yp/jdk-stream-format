@@ -1,6 +1,7 @@
 package com.l1yp.adapter;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -36,7 +37,7 @@ public class AdapterRegistry {
         register(Double.class, numberAdapter);
         register(Boolean.class, numberAdapter);
         register(Character.class, numberAdapter);
-
+        register(Date.class, new DateAdapter());
     }
 
     public static Adapter<?> get(String typeName){

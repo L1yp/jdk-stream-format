@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import static java.io.ObjectStreamConstants.TC_BLOCKDATA;
+import static java.io.ObjectStreamConstants.TC_BLOCKDATALONG;
 import static java.io.ObjectStreamConstants.TC_CLASSDESC;
 import static java.io.ObjectStreamConstants.TC_LONGSTRING;
 import static java.io.ObjectStreamConstants.TC_NULL;
