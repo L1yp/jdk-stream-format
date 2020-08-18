@@ -62,6 +62,11 @@ public class ObjectReader {
                 reader.skip(1);
                 return null;
             }
+            case TC_REFERENCE: {
+                reader.skip(1);
+                int index = reader.readInt() - 8257536;
+                return references.get(index);
+            }
             default:
                 return null;
         }
@@ -150,14 +155,14 @@ public class ObjectReader {
                 key = field.name;
                 if (field.type != null && field.type != Object.class) {
                     switch (field.typeCode) {
-                        case 'Z':
-                        case 'B':  val = reader.read(); break;
-                        case 'C':
+                        case 'Z': val = reader.readBoolean(); break;
+                        case 'B': val = reader.read(); break;
+                        case 'C': val = reader.readChar(); break;
                         case 'S': val = reader.readShort(); break;
-                        case 'I':
-                        case 'F': val = reader.readInt(); break;
-                        case 'J':
-                        case 'D': val = reader.readLong(); break;
+                        case 'I': val = reader.readInt(); break;
+                        case 'F': val = reader.readFloat(); break;
+                        case 'J': val = reader.readLong(); break;
+                        case 'D': val = reader.readDouble(); break;
                         default : throw new IllegalArgumentException("illegal signature");
                     }
                 } else {
