@@ -128,12 +128,14 @@ public class ObjectReader {
                     reader.skip(1);
                     int index = reader.readInt() - 8257536;
                     descriptor = (ObjectDescriptor) references.get(index);
+                    descriptor = descriptor.dup();
                     if (root == null){
                         root = descriptor;
                     }
                     if (last != null){
                         last.parent = descriptor;
                     }
+
                     nestedObj.add(descriptor);
                     System.out.println("reference = " + descriptor);
                     last = descriptor;

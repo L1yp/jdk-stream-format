@@ -9,9 +9,10 @@ import java.util.Map;
  * @Date 2020-07-03
  * @Email l1yp@qq.com
  */
-public class UserDetail implements Serializable {
+public class UserDetail extends User implements Serializable {
 
     private static final long serialVersionUID = -8095992507160725455L;
+    Account account;
     String email;
     String phone;
     boolean sex;
