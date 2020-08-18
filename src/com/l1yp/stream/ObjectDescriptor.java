@@ -12,6 +12,7 @@ public class ObjectDescriptor {
     long serialId;
     byte flags;
     FieldDescriptor[] fields;
+    ObjectDescriptor parent;
 
     @Override
     public String toString() {

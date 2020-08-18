@@ -109,7 +109,7 @@ public class Packet {
 
     private void checkReadBound(int len) {
         if (len + readerPos > limit){
-            throw new IllegalCallerException(
+            throw new IllegalArgumentException(
                     String.format("current readerPos: %d, limit: %d, require len: %d",
                             readerPos, limit, len));
         }

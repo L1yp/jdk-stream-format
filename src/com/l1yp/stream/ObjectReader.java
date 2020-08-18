@@ -57,11 +57,17 @@ public class ObjectReader {
         switch (type) {
             case TC_OBJECT:
                 return readOrdinaryObject();
-            case TC_STRING, TC_LONGSTRING:
+            case TC_STRING:
+                case TC_LONGSTRING:
                 return readString(false);
             case TC_NULL: {
                 reader.skip(1);
                 return null;
+            }
+            case TC_REFERENCE: {
+                reader.skip(1);
+                int index = reader.readInt() - 8257536;
+                return references.get(index);
             }
             default:
                 return null;
@@ -96,25 +102,43 @@ public class ObjectReader {
 
         List<ObjectDescriptor> nestedObj = new ArrayList<>();
         byte superTag = 0;
+        ObjectDescriptor root = null;
+        ObjectDescriptor last = null;
         outer:
         do {
             byte type = reader.peek();
             ObjectDescriptor descriptor = null;
+
             switch (type) {
                 case TC_CLASSDESC: {
                     descriptor = readClassDesc();
+                    if (root == null){
+                        root = descriptor;
+                    }
+                    if (last != null){
+                        last.parent = descriptor;
+                    }
+
                     nestedObj.add(descriptor);
                     System.out.println("descriptor = " + descriptor);
+                    last = descriptor;
                     break;
                 }
                 case TC_REFERENCE: {
                     reader.skip(1);
                     int index = reader.readInt() - 8257536;
                     descriptor = (ObjectDescriptor) references.get(index);
+                    if (root == null){
+                        root = descriptor;
+                    }
+                    if (last != null){
+                        last.parent = descriptor;
+                    }
                     nestedObj.add(descriptor);
-
                     System.out.println("reference = " + descriptor);
-                    break outer;
+                    last = descriptor;
+
+                    break outer; // TODO: 好像不需要直接跳出
                 }
                 default:
                     throw new UnsupportedOperationException("不支持的描述类型: " + type);
@@ -128,10 +152,7 @@ public class ObjectReader {
             reader.skip(1);
         }
 
-        List<FieldDescriptor> results = new ArrayList<>();
-
-        HashMap<String, Object> map = new LinkedHashMap<>();
-        references.add(map);
+        references.add(root);
 
         String key;
         Object val;
@@ -145,30 +166,32 @@ public class ObjectReader {
         }
 
         for (int i = nestedObj.size() - 1; i >= 0; i--) {
-            ObjectDescriptor descriptor = nestedObj.get(i);
+            ObjectDescriptor item = nestedObj.get(i);
 
-            for (FieldDescriptor field : descriptor.fields) {
+            for (FieldDescriptor field : item.fields) {
                 key = field.name;
                 if (field.type != null && field.type != Object.class) {
                     switch (field.typeCode) {
-                        case 'Z', 'B' -> val = reader.read();
-                        case 'C', 'S' -> val = reader.readShort();
-                        case 'I', 'F' -> val = reader.readInt();
-                        case 'J', 'D' -> val = reader.readLong();
-                        default -> throw new IllegalArgumentException("illegal signature");
+                        case 'Z': val = reader.readBoolean(); break;
+                        case 'B': val = reader.read(); break;
+                        case 'C': val = reader.readChar(); break;
+                        case 'S': val = reader.readShort(); break;
+                        case 'I': val = reader.readInt(); break;
+                        case 'F': val = reader.readFloat(); break;
+                        case 'J': val = reader.readLong(); break;
+                        case 'D': val = reader.readDouble(); break;
+                        default : throw new IllegalArgumentException("illegal signature");
                     }
                 } else {
                     val = readObject();
                 }
                 field.val = val;
                 System.out.println("name = " + key + ", val = " + val);
-                results.add(field);
-                map.put(key, val);
             }
         }
 
 
-        return results;
+        return root;
     }
 
 

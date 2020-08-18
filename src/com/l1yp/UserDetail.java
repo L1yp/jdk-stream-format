@@ -11,7 +11,6 @@ import java.util.Map;
  */
 public class UserDetail implements Serializable {
 
-    @java.io.Serial
     private static final long serialVersionUID = -8095992507160725455L;
     String email;
     String phone;
