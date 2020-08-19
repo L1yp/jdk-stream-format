@@ -8,6 +8,7 @@ import com.l1yp.util.Packet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 import static java.io.ObjectStreamConstants.TC_BLOCKDATA;
@@ -99,8 +100,6 @@ public class ObjectReader {
             throw new InternalError();
         }
 
-
-        List<ObjectDescriptor> nestedObj = new ArrayList<>();
         byte superTag = 0;
         ObjectDescriptor root = null;
         ObjectDescriptor last = null;
@@ -119,7 +118,6 @@ public class ObjectReader {
                         last.parent = descriptor;
                     }
 
-                    nestedObj.add(descriptor);
                     System.out.println("descriptor = " + descriptor);
                     last = descriptor;
                     break;
@@ -135,10 +133,7 @@ public class ObjectReader {
                     if (last != null){
                         last.parent = descriptor;
                     }
-
-                    nestedObj.add(descriptor);
                     System.out.println("reference = " + descriptor);
-                    last = descriptor;
 
                     break outer; // TODO: 好像不需要直接跳出
                 }
@@ -156,9 +151,16 @@ public class ObjectReader {
 
         references.add(root);
 
+        last = root;
+        LinkedList<ObjectDescriptor> inheritanceChain = new LinkedList<>();
+        while (last != null){
+            inheritanceChain.push(last);
+            last = last.parent;
+        }
+
         String key;
         Object val;
-        String clazzName = nestedObj.get(0).name;
+        String clazzName = root.name;
         if (AdapterRegistry.contains(clazzName)) {
             int size = references.size();
             Adapter<?> adapter = AdapterRegistry.get(clazzName);
@@ -167,9 +169,8 @@ public class ObjectReader {
             return result;
         }
 
-        for (int i = nestedObj.size() - 1; i >= 0; i--) {
-            ObjectDescriptor item = nestedObj.get(i);
-
+        while (!inheritanceChain.isEmpty()) {
+            ObjectDescriptor item = inheritanceChain.pop();
             for (FieldDescriptor field : item.fields) {
                 key = field.name;
                 if (field.type != null && field.type != Object.class) {
@@ -191,7 +192,6 @@ public class ObjectReader {
                 System.out.println("name = " + key + ", val = " + val);
             }
         }
-
 
         return root;
     }
