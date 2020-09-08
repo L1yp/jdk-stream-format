@@ -47,26 +47,29 @@ public class Main {
         // user.money = 1048576;
         // user.accountName = "Zyl";
         UserDetail detail = new UserDetail();
+        detail.user = new User();
+        detail.user.name = "detail.user.name";
+        detail.user.age = 9999;
         // detail.contacts = new LinkedList<>();
-        Account account1 = new Account();
-        account1.money = 100;
-        account1.accountName = "name1";
-        Account account2 = new Account();
-        account2.money = 200;
-        account2.accountName = "name2";
-
-        detail.account = account1;
-        detail.money = 1048576;
-        detail.accountName = "detailName";
-
+        // Account account1 = new Account();
+        // account1.money = 100;
+        // account1.accountName = "name1";
+        // Account account2 = new Account();
+        // account2.money = 200;
+        // account2.accountName = "name2";
+        //
+        // detail.account = account1;
+        // detail.money = 1048576;
+        // detail.accountName = "detailName";
+        //
         // detail.contacts.add(account1);
         // detail.contacts.add(account2);
-        detail.email = "l1yp@qq.com";
-        detail.phone = "18877811997";
-        detail.sex = true;
-
-        detail.detail = detail;
-
+        // detail.email = "l1yp@qq.com";
+        // detail.phone = "18877811997";
+        // detail.sex = true;
+        //
+        // detail.detail = detail;
+        //
         // detail.map = new LinkedHashMap<>();
         // detail.map.put("lyp-k", account1);
         // detail.map.put("lyp-k1", account2);
@@ -98,6 +101,11 @@ public class Main {
 
         // ObjectReader reader = new ObjectReader(HexUtil.hex2bin("ACED000573720039636F6D2E6F6E6577617665696E632E74766965772E6D616E6167656D656E742E656E746974792E4465766963654F7065726174696F6E4C6F67C3DCA2BF8A8FB5360200064A00026964490006737461747573490004747970654C00036465737400124C6A6176612F6C616E672F537472696E673B4C0005737462496471007E00014C000474696D657400104C6A6176612F7574696C2F446174653B787000000000496BBA5100000000000000027074002030303336303346463030303232383030313733384634344337303842333233427372000E6A6176612E7574696C2E44617465686A81014B5974190300007870770800000172DAD3DC9F78"));
         // ObjectReader reader = new ObjectReader(HexUtil.hex2bin("ACED000573720010636F6D2E6C3179702E55736572536574781A82E7D29951A00200034C0006696E7456616C7400134C6A6176612F6C616E672F496E74656765723B4C00076C6F6E6756616C7400104C6A6176612F6C616E672F4C6F6E673B4C000474696D657400104C6A6176612F7574696C2F446174653B7870737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B0200007870000000647372000E6A6176612E6C616E672E4C6F6E673B8BE490CC8F23DF0200014A000576616C75657871007E0006000000000000000A7372000E6A6176612E7574696C2E44617465686A81014B59741903000078707708000001735C32FE5678"));
+        // ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(HexUtil.hex2bin(val)));
+        // Object ret = ois.readObject();
+        // System.out.println("ret = " + ret);
+
+
         ObjectReader reader = new ObjectReader(HexUtil.hex2bin(val));
         Object result = reader.readObject();
         System.out.println("object = " + result);

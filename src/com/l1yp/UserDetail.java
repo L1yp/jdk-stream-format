@@ -12,21 +12,22 @@ import java.util.Map;
 public class UserDetail extends User implements Serializable {
 
     private static final long serialVersionUID = -8095992507160725455L;
-    Account account;
-    String email;
-    String phone;
-    boolean sex;
-    List<Account> contacts;
-
-    Map<String, Object> map;
-
-    @Override
-    public String toString() {
-        return "UserDetail{" +
-                "email='" + email + '\'' +
-                ", phone='" + phone + '\'' +
-                ", sex=" + sex +
-                ", contacts=" + contacts +
-                '}';
-    }
+    // Account account;
+    User user;
+    // String email;
+    // String phone;
+    // boolean sex;
+    // List<Account> contacts;
+    //
+    // Map<String, Object> map;
+    //
+    // @Override
+    // public String toString() {
+    //     return "UserDetail{" +
+    //             "email='" + email + '\'' +
+    //             ", phone='" + phone + '\'' +
+    //             ", sex=" + sex +
+    //             ", contacts=" + contacts +
+    //             '}';
+    // }
 }
