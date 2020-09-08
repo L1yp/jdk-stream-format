@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -70,7 +71,9 @@ public class Main {
         // detail.map.put("lyp-k", account1);
         // detail.map.put("lyp-k1", account2);
         //
-        os.writeObject(detail);
+
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        os.writeObject(timestamp);
         String val = HexUtil.bin2hex(bos.toByteArray());
         System.out.println(val);
         // System.exit(0);

@@ -58,7 +58,7 @@ public class ObjectReader {
             case TC_OBJECT:
                 return readOrdinaryObject();
             case TC_STRING:
-                case TC_LONGSTRING:
+            case TC_LONGSTRING:
                 return readString(false);
             case TC_NULL: {
                 reader.skip(1);
@@ -74,7 +74,7 @@ public class ObjectReader {
         }
     }
 
-    private String readString(boolean unshared) {
+    private ObjectDescriptor readString(boolean unshared) {
         String str;
         byte tc = reader.read();
         switch (tc) {
@@ -90,7 +90,14 @@ public class ObjectReader {
                 throw new IllegalArgumentException(String.format("invalid type code: %02X", tc));
         }
         references.add(unshared ? unsharedMarker : str);
-        return str;
+        ObjectDescriptor descriptor = new ObjectDescriptor();
+        descriptor.name = String.class.getName();
+        descriptor.rawValue = str;
+        descriptor.serialId = -6849794470754667710L;
+        descriptor.flags = 3;
+        descriptor.parent = null;
+        descriptor.fields = null;
+        return descriptor;
 
     }
 
@@ -158,17 +165,26 @@ public class ObjectReader {
 
         String key;
         Object val;
-        String clazzName = nestedObj.get(0).name;
+        String clazzName = root.name;
         if (AdapterRegistry.contains(clazzName)) {
             int size = references.size();
             Adapter<?> adapter = AdapterRegistry.get(clazzName);
             Object result = adapter.read(clazzName, this);
-            references.set(size - 1, result);
-            return result;
+            root.rawValue = result;
+            references.set(size - 1, root);
+            return root;
         }
 
         for (int i = nestedObj.size() - 1; i >= 0; i--) {
             ObjectDescriptor item = nestedObj.get(i);
+            if (AdapterRegistry.contains(item.name)) {
+                int size = references.size();
+                Adapter<?> adapter = AdapterRegistry.get(item.name);
+                item.rawValue = adapter.read(item.name, this);
+                references.set(size - 1, item);
+                continue;
+            }
+
 
             for (FieldDescriptor field : item.fields) {
                 key = field.name;

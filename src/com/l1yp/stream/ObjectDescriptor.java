@@ -12,6 +12,7 @@ public class ObjectDescriptor implements Cloneable {
     long serialId;
     byte flags;
     FieldDescriptor[] fields;
+    Object rawValue;
     ObjectDescriptor parent;
 
     @Override
@@ -21,6 +22,8 @@ public class ObjectDescriptor implements Cloneable {
                 ", serialId=" + serialId +
                 ", flags=" + flags +
                 ", fields=" + Arrays.toString(fields) +
+                ", rawValue=" + rawValue +
+                ", parent=" + parent +
                 '}';
     }
 

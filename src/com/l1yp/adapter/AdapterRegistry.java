@@ -1,5 +1,6 @@
 package com.l1yp.adapter;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ public class AdapterRegistry {
         register(Boolean.class, numberAdapter);
         register(Character.class, numberAdapter);
         register(Date.class, new DateAdapter());
+        register(Timestamp.class, new DateAdapter());
     }
 
     public static Adapter<?> get(String typeName){
