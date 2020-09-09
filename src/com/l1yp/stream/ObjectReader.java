@@ -75,7 +75,7 @@ public class ObjectReader {
         }
     }
 
-    private ObjectDescriptor readString(boolean unshared) {
+    private String readString(boolean unshared) {
         String str;
         byte tc = reader.read();
         switch (tc) {
@@ -91,14 +91,7 @@ public class ObjectReader {
                 throw new IllegalArgumentException(String.format("invalid type code: %02X", tc));
         }
         references.add(unshared ? unsharedMarker : str);
-        ObjectDescriptor descriptor = new ObjectDescriptor();
-        descriptor.name = String.class.getName();
-        descriptor.rawValue = str;
-        descriptor.serialId = -6849794470754667710L;
-        descriptor.flags = 3;
-        descriptor.parent = null;
-        descriptor.fields = null;
-        return descriptor;
+        return str;
 
     }
 
@@ -173,8 +166,8 @@ public class ObjectReader {
             Adapter<?> adapter = AdapterRegistry.get(clazzName);
             Object result = adapter.read(clazzName, this);
             root.rawValue = result;
-            references.set(size - 1, root);
-            return root;
+            references.set(size - 1, result);
+            return result;
         }
 
         while (!inheritanceChain.isEmpty()) {
@@ -183,7 +176,7 @@ public class ObjectReader {
                 int size = references.size();
                 Adapter<?> adapter = AdapterRegistry.get(item.name);
                 item.rawValue = adapter.read(item.name, this);
-                references.set(size - 1, item);
+                references.set(size - 1, item.rawValue);
                 continue;
             }
             for (FieldDescriptor field : item.fields) {
