@@ -22,7 +22,10 @@ public class DateAdapter implements Adapter<Date> {
         if (clazzName.equals(Date.class.getName())){
             return new Date(millions);
         }else if (clazzName.equals(Timestamp.class.getName())){
-            return new Timestamp(millions);
+            int nanos = reader.getReader().readInt();
+            Timestamp timestamp = new Timestamp(millions);
+            timestamp.setNanos(nanos);
+            return timestamp;
         }
         return null;
     }
