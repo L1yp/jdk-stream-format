@@ -46,8 +46,16 @@ public class AdapterRegistry {
         return stringAdapterMap.get(typeName);
     }
 
+    public static Adapter<?> get(Class<?> clazz){
+        return clazzAdapterMap.get(clazz);
+    }
+
     public static boolean contains(String typeName){
         return stringAdapterMap.containsKey(typeName);
+    }
+
+    public static boolean contains(Class<?> clazz){
+        return clazzAdapterMap.containsKey(clazz);
     }
 
     public static void register(String typeName, Adapter<?> adapter){

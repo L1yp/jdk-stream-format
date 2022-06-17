@@ -5,6 +5,7 @@ import com.l1yp.adapter.AdapterRegistry;
 import com.l1yp.stream.ObjectDescriptor.FieldDescriptor;
 import com.l1yp.util.Packet;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -19,6 +20,7 @@ import static java.io.ObjectStreamConstants.TC_NULL;
 import static java.io.ObjectStreamConstants.TC_OBJECT;
 import static java.io.ObjectStreamConstants.TC_REFERENCE;
 import static java.io.ObjectStreamConstants.TC_STRING;
+import static java.io.ObjectStreamConstants.TC_ARRAY;
 
 /**
  * @Author Lyp
@@ -36,7 +38,7 @@ public class ObjectReader {
     /**
      * readClass // TODO
      * readProxyDesc // TODO
-     * readArray //TODO
+     * readArray //TODO processing
      * readEnum // TODO
      * readNonProxyDesc
      * readString from readObject / readTypeString / readEnum 不包含字段名,仅缓存 字符串实例, 引用类型的签名字符串, 枚举
@@ -69,6 +71,10 @@ public class ObjectReader {
                 reader.skip(1);
                 int index = reader.readInt() - 8257536;
                 return references.get(index);
+            }
+            case TC_ARRAY: {
+                return readArray();
+//                System.out.println(reader.remaining());
             }
             default:
                 return null;
@@ -200,6 +206,120 @@ public class ObjectReader {
                 System.out.println("name = " + key + ", val = " + val);
             }
         }
+
+        return root;
+    }
+
+    /**
+     * @see java.io.ObjectInputStream#readArray!(boolean)
+     * @return Array
+     */
+    private Object readArray() {
+        if (reader.read() != TC_ARRAY) {
+            throw new InternalError();
+        }
+
+        byte superTag = 0;
+        ObjectDescriptor root = null;
+        ObjectDescriptor last = null;
+        outer:
+        do {
+            byte type = reader.peek();
+            ObjectDescriptor descriptor = null;
+
+            switch (type) {
+                case TC_CLASSDESC: {
+                    descriptor = readClassDesc();
+                    if (root == null){
+                        root = descriptor;
+                    }
+                    if (last != null){
+                        last.parent = descriptor;
+                    }
+
+                    System.out.println("descriptor = " + descriptor);
+                    last = descriptor;
+                    break;
+                }
+                case TC_REFERENCE: {
+                    reader.skip(1);
+                    int index = reader.readInt() - 8257536;
+                    descriptor = (ObjectDescriptor) references.get(index);
+                    descriptor = descriptor.dup();
+                    if (root == null){
+                        root = descriptor;
+                    }
+                    if (last != null){
+                        last.parent = descriptor;
+                    }
+                    System.out.println("reference = " + descriptor);
+
+                    break outer; // TODO: 好像不需要直接跳出
+                }
+                default:
+                    throw new UnsupportedOperationException("不支持的描述类型: " + type);
+            }
+
+            reader.skip(1); // end
+            superTag = reader.peek();
+        } while (superTag != TC_NULL);
+
+        if (superTag == TC_NULL) {
+            reader.skip(1);
+        }
+
+        references.add(root);
+
+        last = root;
+        LinkedList<ObjectDescriptor> inheritanceChain = new LinkedList<>();
+        while (last != null){
+            inheritanceChain.push(last);
+            last = last.parent;
+        }
+
+        String clazzName = root.name;
+        Class<?> clazz = null;
+        try {
+            clazz = Class.forName(clazzName);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return root;
+        }
+
+        int len = reader.readInt();
+
+        Object items = Array.newInstance(clazz.getComponentType(), len);
+        for (int i = 0; i < len; i++) {
+            Class<?> componentType = clazz.getComponentType();
+            Object result = null;
+            if (componentType.equals(String.class)) {
+                result = readString(true);
+                int size = references.size();
+                references.set(size - 1, result);
+            } else if (componentType.isPrimitive()){
+                switch (componentType.getName()) {
+                    case "boolean": result = reader.readBoolean(); break;
+                    case "byte": result = reader.read(); break;
+                    case "char": result = reader.readChar(); break;
+                    case "short": result = reader.readShort(); break;
+                    case "int": result = reader.readInt(); break;
+                    case "float": result = reader.readFloat(); break;
+                    case "long": result = reader.readLong(); break;
+                    case "double": result = reader.readDouble(); break;
+                    default : throw new IllegalArgumentException("illegal signature");
+                }
+            } else {
+                result = readObject();
+                int size = references.size();
+                references.set(size - 1, result);
+            }
+
+
+
+            Array.set(items, i, result);
+        }
+
+        root.rawValue = items;
 
         return root;
     }
